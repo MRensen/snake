@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<style>
+canvas{
+	background-color: #afafaf;
+}
+</style>
+
+</head> 
+<body>
+	<!-- versions in JSFidle:
+			3-3-2017: https://jsfiddle.net/4hgr0g8f/ -->
+	<canvas id='canvas1' width='200' height='200'></canvas>
+<script>
+	var foodCheck = true;
+	var heading;
+	var pressKey;
+	var headingFrame;
+	var grid = [];
+	var canvas = document.getElementById('canvas1');
+	var context = canvas.getContext('2d');
+	window.requestAnimFrame = (function(callback) {
+        	return window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame ||
+       	 	function(callback) {
+          		setTimeout(callback, 1000 / 60);
+        	};
+      	});	
+ 
+	function restart(snek){	
+		alert('You died!!\nRestart?')
+		clearTimeout(headingFrame);
+		snek.tail=null
+		snek.tail=[];
+		context.clearRect(0,0, canvas.width, canvas.height);			
+		snek.x=canvas.width/2;
+		snek.y=canvas.height/2;
+		heading = 0;
+		for(var i in snek.direction){
+			snek.direction[i] = false;
+		};
+		drawFood();
+		snek.tailCount = 2;
+		snek.draw();
+		pressKey = undefined;
+	}
+
+	function engine(event, snek){
+		var direction = event.keyCode;
+		// remember which direction you are going
+
+		
+			for(var i in snek.direction){
+				if (i == direction){
+					snek.direction[i] = true;
+				} else{
+					snek.direction[i] = false;
+				}
+			
+
+			// move
+			if(direction!==heading){
+				if(direction == heading+2 || direction == heading - 2){
+					restart(snek);
+				} else {
+					move(direction, snek);
+					
+				};
+			};
+		};
+	};
+
+	function move(direction, snek){
+		heading = direction;
+		clearTimeout(headingFrame);
+		//TailCheck(snek);
+		if(food.x-5 == snek.x && food.y-5 == snek.y){
+			snek.tailCount++;
+			drawFood();
+			snek.tailDraw();	
+		}
+
+		if(snek.direction[39]){
+			snek.clear();
+			var newX = snek.x+ snek.speed;
+
+			snek.x = newX;
+
+			snek.draw();
+			snek.tailDraw();
+
+		}else if(snek.direction[38]){
+			snek.clear();
+			var newY = snek.y- snek.speed;
+
+			snek.y = newY;
+
+			snek.draw();
+			snek.tailDraw();
+		}else if(snek.direction[37]){
+			snek.clear();
+			var newX = snek.x- snek.speed;
+
+			snek.x = newX;
+
+			snek.draw();
+			snek.tailDraw();
+		}else if(snek.direction[40]){
+			snek.clear();
+			var newY = snek.y+ snek.speed;
+
+			snek.y = newY;
+
+			snek.draw();
+			snek.tailDraw();
+		}else if(direction == 23){
+			// press spacebar for longer tail
+			snek.tailCount++;
+			snek.tailDraw();
+			headingFrame = setTimeout(function(){requestAnimFrame(move(heading, snek))},100); 
+		} else {
+
+		}
+		//check if snake remains within the canvas.
+		if((snek.x >=0 && snek.x <=canvas.width-snek.width && snek.y>=0 && snek.y <=canvas.height-snek.height)){
+			pressKey = undefined;
+			headingFrame = setTimeout(function(){requestAnimFrame(move(direction, snek))},100); 
+		}  else { 
+			restart(snek); 	
+		}
+		death(snek);
+	};
+
+	function death(snek){
+
+		for(i=0; i < snek.tailCount-4; i++){
+			if(snek.x==snek.tail[i].x && snek.y==snek.tail[i].y && i<snek.tail.length){
+				restart(snek);
+			} 
+		}
+	}
+	
+	// Sometimes the food doesn't draw. I thought it was when it tried to draw on top of a tail element, but it also doesn't draw when it's intended position would be nowhere near the snake or it's tail. Why???
+	function drawFood(){
+		//create grid of 10x10 squares and pick a random one.
+		for(var x = 0; x < canvas.width; x++){
+			if(x%10==0){
+				for(var y = 0; y < canvas.height; y++){
+					if(y%10==0){
+						grid.push({'x':x,'y':y, 'free': true})
+					}
+				}
+			}
+		}
+		
+		// pick a random dict from grid
+		var randomCoord = Math.floor(Math.random()*grid.length);
+		// set coords for food and make sure they're free
+		for(i=0; i < snakeHead.tailCount; i++){
+				if(snakeHead.tail[i]!=undefined){
+					if(grid[randomCoord]['x']==snakeHead.tail[i].x && grid[randomCoord]['y']==snakeHead.tail[i].y){
+						drawFood();
+					} else {
+						food.x = (grid[randomCoord]['x'])+5;
+						food.y = (grid[randomCoord]['y'])+5;
+					};
+				}else {
+					food.x = (grid[randomCoord]['x'])+5;
+					food.y = (grid[randomCoord]['y'])+5;
+				};
+			}
+		//draw food
+		context.beginPath();
+		context.arc(food.x, food.y, food.radius, 0, 2*Math.PI, false);
+		context.fillStyle = food.color;
+		context.fill();
+		context.stroke();
+	} 
+	var food = {
+		context : context,
+		x: 0,
+		y : 0,
+		width: 8,
+		height: 8,
+		color: 'green',
+		radius: 4,
+	};
+
+
+	function Snake() {
+		this.x = canvas.width/2;		
+		this.y = canvas.height/2;
+		this.speed = 10;		
+		this.width= 10;
+		this.height= 10;
+		this.direction= {37:false, 38:false, 39:false, 40:false};
+		this.color= 'black';
+		this.tail = [];
+		// tailcount has to be >2 or the tails won't draw, why?
+		this.tailCount= 2;
+		this.draw = function() {
+				context.beginPath();
+				context.rect((this.x), (this.y), this.width, this.height);
+				context.fillStyle = this.color;
+				context.fill();
+				context.stroke();
+				context.closePath();
+		},
+		this.clear= function() {
+			context.clearRect(this.x-1, this.y-1,this.width+2,this.height+2);
+			for(var i = 0; i < this.tail.length; i++){
+				context.clearRect(this.tail[i].x-1, this.tail[i].y-1, this.width+2, this.height+2)
+			}
+		}
+		this.tailDraw = function() {
+			for(var i = 0; i < this.tailCount; i++){
+				this.tail[i] = this.tail[i+1];
+				if(this.tail[i]==undefined){
+					this.tail[i]={x:this.x, y:this.y};
+				}
+			}
+			for(var i = 1; i < this.tailCount-1; i++){
+				context.beginPath();
+				context.rect((this.tail[i].x), (this.tail[i].y), this.width, this.height);
+				context.fillStyle = this.color;	
+				context.fill();
+				context.stroke();
+				context.closePath();
+			}
+		};
+	};
+
+	var snakeHead = new Snake();
+
+
+	snakeHead.draw();
+	drawFood();
+	document.onkeypress = function(event){
+		if(pressKey == undefined){
+			engine(event, snakeHead);
+			pressKey = event;
+		}else{
+			engine(pressKey,snakeHead);
+			pressKey = setTimeout(engine(event,snakeHead),100)
+		}
+	}
+
+</script>
+</body>
+</html>
+	
